@@ -23,6 +23,9 @@ extern "C" {
 // const char* wif_password = "password";
 #include "credentials.h"  //ignored by git to keep your network details private
 
+#include <ArtnetWifi.h>   //clonedfrom https://github.com/rstephan/ArtnetWifi.git
+ArtnetWifi artnet;
+const int startUniverse = 0; // CHANGE FOR YOUR SETUP most software this is 1, some software send out artnet first universe as 0.
 
 void setup()
 {
@@ -79,10 +82,16 @@ void setup()
   //initialize neopixel
   pixels.begin();
   neopixelTest();
+
+  artnet.begin();
+
+  // this will be called for each packet received
+  artnet.setArtDmxCallback(onDmxFrame);
 }
 
 void loop(){
-
+  // we call the read function inside the loop
+  artnet.read();
 }
 
 void neopixelTest(){
@@ -115,4 +124,32 @@ void neopixelTest(){
   #endif
   pixels.setPixelColor(0, pixels.Color(0, 0, 0)); // Moderately bright green color.
   pixels.show(); // This sends the updated pixel color to the hardware.
+}
+
+void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
+{
+  boolean tail = false;
+
+  Serial.print("DMX: Univ: ");
+  Serial.print(universe, DEC);
+  Serial.print(", Seq: ");
+  Serial.print(sequence, DEC);
+  Serial.print(", Data (");
+  Serial.print(length, DEC);
+  Serial.print("): ");
+
+  if (length > 16) {
+    length = 16;
+    tail = true;
+  }
+  // send out the buffer
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print(data[i], HEX);
+    Serial.print(" ");
+  }
+  if (tail) {
+    Serial.print("...");
+  }
+  Serial.println();
 }
