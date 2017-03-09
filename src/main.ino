@@ -130,18 +130,30 @@ void neopixelTest(){
 }
 
 void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data){
+
   if (universe == UNIVERSE) {
+    Serial.print("DMX: Univ: ");
+    Serial.print(universe, DEC);
+    Serial.print(", Seq: ");
+    Serial.print(sequence, DEC);
+    Serial.print(", Data (");
+    Serial.print(length, DEC);
+    Serial.print("): ");
+
     int red_color = data[(UNIT_ID - 1)];
+      Serial.print("dmx red: "); Serial.println(red_color);
       pixels.setPixelColor(0, pixels.Color(red_color, 0, 0));
       pixels.show(); // This sends the updated pixel color to the hardware.
     }
     else if (universe == UNIVERSE) {
       int green_color = data[(UNIT_ID)];
+      Serial.print("dmx green: "); Serial.println(green_color);
         pixels.setPixelColor(0, pixels.Color(0, green_color, 0));
         pixels.show(); // This sends the updated pixel color to the hardware.
       }
       else if (universe == UNIVERSE) {
         int blue_color = data[(UNIT_ID + 1)];
+        Serial.print("dmx blue: "); Serial.println(blue_color);
           pixels.setPixelColor(0, pixels.Color(0, 0, blue_color));
           pixels.show(); // This sends the updated pixel color to the hardware.
         }
