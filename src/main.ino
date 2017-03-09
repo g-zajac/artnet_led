@@ -23,6 +23,12 @@ extern "C" {
 // const char* wif_password = "password";
 #include "credentials.h"  //ignored by git to keep your network details private
 
+#include <ArtnetWifi.h>   //clonedfrom https://github.com/rstephan/ArtnetWifi.git
+ArtnetWifi artnet;
+
+//------------------- ArtNet -----------------------------
+#define UNIVERSE 0         //Max MSP test patch 0, desk 1
+#define UNIT_ID 1
 
 void setup()
 {
@@ -79,10 +85,16 @@ void setup()
   //initialize neopixel
   pixels.begin();
   neopixelTest();
+
+  artnet.begin();
+
+  // this will be called for each packet received
+  artnet.setArtDmxCallback(onDmxFrame);
 }
 
 void loop(){
-
+  // we call the read function inside the loop
+  artnet.read();
 }
 
 void neopixelTest(){
@@ -115,4 +127,28 @@ void neopixelTest(){
   #endif
   pixels.setPixelColor(0, pixels.Color(0, 0, 0)); // Moderately bright green color.
   pixels.show(); // This sends the updated pixel color to the hardware.
+}
+
+void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data){
+
+  if (universe == UNIVERSE) {
+    // Serial.print("DMX: Univ: ");
+    // Serial.print(universe, DEC);
+    // Serial.print(", Seq: ");
+    // Serial.print(sequence, DEC);
+    // Serial.print(", Data (");
+    // Serial.print(length, DEC);
+    // Serial.println("): ");
+
+    int red_color = data[0];
+    int green_color = data[1];
+    int blue_color = data[2];
+    
+    Serial.print("dmx red: "); Serial.println(red_color);
+    Serial.print("dmx green: "); Serial.println(green_color);
+    Serial.print("dmx blue: "); Serial.println(blue_color);
+
+    pixels.setPixelColor(0, pixels.Color(red_color, green_color, blue_color));
+    pixels.show(); // This sends the updated pixel color to the hardware.
+  } //if
 }
