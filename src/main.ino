@@ -1,6 +1,7 @@
 //******************************************************************************
-#define FIRMWARE_VERSION "1.1.4"  //MAJOR.MINOR.PATCH more info on: http://semver.org
+#define FIRMWARE_VERSION "1.1.5"  //MAJOR.MINOR.PATCH more info on: http://semver.org
 #define SERIAL_SPEED 115200
+
 //#define PRODUCTION true         //uncoment to turn the serial debuging
 //******************************************************************************
 
@@ -8,20 +9,27 @@
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <Adafruit_NeoPixel.h>    // neopixel lib from: https://github.com/adafruit/Adafruit_NeoPixel.git
 
-// neopixel setup
-#define NUMPIXELS 1
-#define NEOPIXEL_PIN 12 //D6 on nodeMCU
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-
-extern "C" {
-#include "user_interface.h"  //NOTE needed for esp info
-}
-
 // ------------------------------ Network --------------------------------------
 //create credentials.h file in src folder with ssid and pass formated like below:
 // const char* wifi_ssid = "yournetworkssid";
 // const char* wif_password = "password";
 #include "credentials.h"  //ignored by git to keep your network details private
+
+// neopixel setup
+#define NUMPIXELS 1
+#define NEOPIXEL_PIN 12 //D6 on nodeMCU
+
+#ifdef Anthony
+  Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_RGB + NEO_KHZ800);
+#endif
+
+#ifdef Grzegorz
+  Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+#endif
+
+extern "C" {
+#include "user_interface.h"  //NOTE needed for esp info
+}
 
 #include <ArtnetWifi.h>   //clonedfrom https://github.com/rstephan/ArtnetWifi.git
 ArtnetWifi artnet;
@@ -143,7 +151,7 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
     int red_color = data[0];
     int green_color = data[1];
     int blue_color = data[2];
-    
+
     Serial.print("dmx red: "); Serial.println(red_color);
     Serial.print("dmx green: "); Serial.println(green_color);
     Serial.print("dmx blue: "); Serial.println(blue_color);
