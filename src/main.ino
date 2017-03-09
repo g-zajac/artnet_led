@@ -1,13 +1,19 @@
 //******************************************************************************
 #define FIRMWARE_VERSION "1.1.5"  //MAJOR.MINOR.PATCH more info on: http://semver.org
 #define SERIAL_SPEED 115200
-//#define Anthony
+
 //#define PRODUCTION true         //uncoment to turn the serial debuging
 //******************************************************************************
 
 // Libraries
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <Adafruit_NeoPixel.h>    // neopixel lib from: https://github.com/adafruit/Adafruit_NeoPixel.git
+
+// ------------------------------ Network --------------------------------------
+//create credentials.h file in src folder with ssid and pass formated like below:
+// const char* wifi_ssid = "yournetworkssid";
+// const char* wif_password = "password";
+#include "credentials.h"  //ignored by git to keep your network details private
 
 // neopixel setup
 #define NUMPIXELS 1
@@ -17,19 +23,13 @@
   Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_RGB + NEO_KHZ800);
 #endif
 
-#ifndef Anthony
+#ifdef Grzegorz
   Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 #endif
 
 extern "C" {
 #include "user_interface.h"  //NOTE needed for esp info
 }
-
-// ------------------------------ Network --------------------------------------
-//create credentials.h file in src folder with ssid and pass formated like below:
-// const char* wifi_ssid = "yournetworkssid";
-// const char* wif_password = "password";
-#include "credentials.h"  //ignored by git to keep your network details private
 
 #include <ArtnetWifi.h>   //clonedfrom https://github.com/rstephan/ArtnetWifi.git
 ArtnetWifi artnet;
