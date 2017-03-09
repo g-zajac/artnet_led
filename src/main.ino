@@ -25,7 +25,10 @@ extern "C" {
 
 #include <ArtnetWifi.h>   //clonedfrom https://github.com/rstephan/ArtnetWifi.git
 ArtnetWifi artnet;
-const int startUniverse = 0; // CHANGE FOR YOUR SETUP most software this is 1, some software send out artnet first universe as 0.
+
+//------------------- ArtNet -----------------------------
+#define UNIVERSE 0         //Max MSP test patch 0, desk 1
+#define UNIT_ID 1
 
 void setup()
 {
@@ -126,30 +129,20 @@ void neopixelTest(){
   pixels.show(); // This sends the updated pixel color to the hardware.
 }
 
-void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
-{
-  boolean tail = false;
-
-  Serial.print("DMX: Univ: ");
-  Serial.print(universe, DEC);
-  Serial.print(", Seq: ");
-  Serial.print(sequence, DEC);
-  Serial.print(", Data (");
-  Serial.print(length, DEC);
-  Serial.print("): ");
-
-  if (length > 16) {
-    length = 16;
-    tail = true;
+void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data){
+  if (universe == UNIVERSE) {
+    int red_color = data[(UNIT_ID - 1)];
+      pixels.setPixelColor(0, pixels.Color(red_color, 0, 0));
+      pixels.show(); // This sends the updated pixel color to the hardware.
+    }
+    else if (universe == UNIVERSE) {
+      int green_color = data[(UNIT_ID)];
+        pixels.setPixelColor(0, pixels.Color(0, green_color, 0));
+        pixels.show(); // This sends the updated pixel color to the hardware.
+      }
+      else if (universe == UNIVERSE) {
+        int blue_color = data[(UNIT_ID + 1)];
+          pixels.setPixelColor(0, pixels.Color(0, 0, blue_color));
+          pixels.show(); // This sends the updated pixel color to the hardware.
+        }
   }
-  // send out the buffer
-  for (int i = 0; i < length; i++)
-  {
-    Serial.print(data[i], HEX);
-    Serial.print(" ");
-  }
-  if (tail) {
-    Serial.print("...");
-  }
-  Serial.println();
-}
