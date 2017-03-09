@@ -1,6 +1,7 @@
 //******************************************************************************
-#define FIRMWARE_VERSION "1.1.4"  //MAJOR.MINOR.PATCH more info on: http://semver.org
+#define FIRMWARE_VERSION "1.1.5"  //MAJOR.MINOR.PATCH more info on: http://semver.org
 #define SERIAL_SPEED 115200
+//#define Anthony
 //#define PRODUCTION true         //uncoment to turn the serial debuging
 //******************************************************************************
 
@@ -11,7 +12,14 @@
 // neopixel setup
 #define NUMPIXELS 1
 #define NEOPIXEL_PIN 12 //D6 on nodeMCU
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+#ifdef Anthony
+  Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_RGB + NEO_KHZ800);
+#endif
+
+#ifndef Anthony
+  Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+#endif
 
 extern "C" {
 #include "user_interface.h"  //NOTE needed for esp info
@@ -143,7 +151,7 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
     int red_color = data[0];
     int green_color = data[1];
     int blue_color = data[2];
-    
+
     Serial.print("dmx red: "); Serial.println(red_color);
     Serial.print("dmx green: "); Serial.println(green_color);
     Serial.print("dmx blue: "); Serial.println(blue_color);
