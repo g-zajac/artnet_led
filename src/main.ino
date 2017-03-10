@@ -1,29 +1,39 @@
 //******************************************************************************
-#define FIRMWARE_VERSION "1.1.5"  //MAJOR.MINOR.PATCH more info on: http://semver.org
+#define FIRMWARE_VERSION "1.2.5"  //MAJOR.MINOR.PATCH more info on: http://semver.org
 #define SERIAL_SPEED 115200
-
 //#define PRODUCTION true         //uncoment to turn the serial debuging
 //******************************************************************************
 
 // Libraries
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
-#include <Adafruit_NeoPixel.h>    // neopixel lib from: https://github.com/adafruit/Adafruit_NeoPixel.git
 
-// ------------------------------ Network --------------------------------------
+//-------------------- OTA - Updates over the air ------------------------------
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+//   |--------------|-------|---------------|--|--|--|--|--|
+//   ^              ^       ^               ^     ^
+//   Sketch    OTA update   File system   EEPROM  WiFi config (SDK)
+
+// ------------------------------ Credentials ----------------------------------
 //create credentials.h file in src folder with ssid and pass formated like below:
 // const char* wifi_ssid = "yournetworkssid";
 // const char* wif_password = "password";
 #include "credentials.h"  //ignored by git to keep your network details private
 
-// neopixel setup
-#define NUMPIXELS 1
-#define NEOPIXEL_PIN 12 //D6 on nodeMCU
+#include <Adafruit_NeoPixel.h>    // neopixel lib from: https://github.com/adafruit/Adafruit_NeoPixel.git
 
 #ifdef Anthony
+  // neopixel setup, individual settings: neo pixel type, neo pin, etc
+  #define NUMPIXELS 1
+  #define NEOPIXEL_PIN 12 //D6 on nodeMCU
   Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_RGB + NEO_KHZ800);
 #endif
 
 #ifdef Grzegorz
+  // neopixel setup
+  #define NUMPIXELS 1
+  #define NEOPIXEL_PIN 12 //D6 on nodeMCU
   Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 #endif
 
@@ -31,9 +41,8 @@ extern "C" {
 #include "user_interface.h"  //NOTE needed for esp info
 }
 
-#include <ArtnetWifi.h>   //clonedfrom https://github.com/rstephan/ArtnetWifi.git
+#include <ArtnetWifi.h>   //cloned from https://github.com/rstephan/ArtnetWifi.git
 ArtnetWifi artnet;
-
 //------------------- ArtNet -----------------------------
 #define UNIVERSE 0         //Max MSP test patch 0, desk 1
 #define UNIT_ID 1
@@ -90,17 +99,24 @@ void setup()
     Serial.println(WiFi.localIP());
   #endif
 
+  ArduinoOTA.setHostname("neo");
+
   //initialize neopixel
   pixels.begin();
   neopixelTest();
 
+  //initialize artnet
   artnet.begin();
 
   // this will be called for each packet received
   artnet.setArtDmxCallback(onDmxFrame);
+
+  initializeOTA();
 }
 
 void loop(){
+  // Update over air (OTA)
+  ArduinoOTA.handle();
   // we call the read function inside the loop
   artnet.read();
 }
@@ -114,21 +130,21 @@ void neopixelTest(){
   // pixels.Color takes RGB values, from 0,0,0 up to 255,255,255
   pixels.setPixelColor(0, pixels.Color(255, 0, 0));
   pixels.show(); // This sends the updated pixel color to the hardware.
-  delay(2000);
+  delay(1000);
 
   #ifndef PRODUCTION // Not in PRODUCTION
     Serial.print("GREEN ");
   #endif
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
   pixels.show(); // This sends the updated pixel color to the hardware.
-  delay(2000);
+  delay(1000);
 
   #ifndef PRODUCTION // Not in PRODUCTION
     Serial.print("BLUE ");
   #endif
   pixels.setPixelColor(0, pixels.Color(0, 0, 255));
   pixels.show(); // This sends the updated pixel color to the hardware.
-  delay(2000);
+  delay(1000);
 
   #ifndef PRODUCTION // Not in PRODUCTION
     Serial.println("OFF");
@@ -159,4 +175,64 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
     pixels.setPixelColor(0, pixels.Color(red_color, green_color, blue_color));
     pixels.show(); // This sends the updated pixel color to the hardware.
   } //if
+}
+
+// Initialize o Esp8266 OTA
+void initializeOTA() {
+  // Port defaults to 8266
+  // ArduinoOTA.setPort(8266);
+  // Hostname defaults to esp8266-[ChipID]
+  // ArduinoOTA.setHostname("myesp8266");
+  // No authentication by default
+  // ArduinoOTA.setPassword((const char *)"123");
+
+  ArduinoOTA.onStart([]() {
+  #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+    Serial.println("* OTA: Start");
+  #endif
+  });
+  ArduinoOTA.onEnd([]() {
+  #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+    Serial.println("\n*OTA: End");
+  #endif
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+  #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+    Serial.printf("*OTA: Progress: %u%%\r", (progress / (total / 100)));
+  #endif
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+  #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+    Serial.printf("*OTA: Error[%u]: ", error);
+  #endif
+  if (error == OTA_AUTH_ERROR) {
+    #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+      Serial.println("Auth Failed");
+    #endif
+  }
+  else if (error == OTA_BEGIN_ERROR) {
+    #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+      Serial.println("Begin Failed");
+    #endif
+  }
+  else if (error == OTA_CONNECT_ERROR) {
+    #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+      Serial.println("Connect Failed");
+    #endif
+  }
+  else if (error == OTA_RECEIVE_ERROR) {
+    #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+      Serial.println("Receive Failed");
+    #endif
+  }
+  else if (error == OTA_END_ERROR) {
+    #ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+      Serial.println("End Failed");
+    #endif
+  }
+  });
+ArduinoOTA.begin();
+#ifndef PRODUCTION_SERIAL // Not in PRODUCTION
+  Serial.println("OTA Ready");
+#endif
 }
